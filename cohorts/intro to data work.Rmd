@@ -1,0 +1,183 @@
+---
+title: 'Crash Course: Working with Data in R'
+author: "Oeconomica"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+This tutorial provides a crash course on working with data in R. This tutorial focuses primarily on using functions from the packages contained within tidyverse along with some of the functionality of base R. Another useful package that is an alternative to tidyverse is **data.table** which will not be covered but is mentioned for those interested. 
+
+## The Fundamentals and the Big 4
+
+### Loading tidyverse
+
+First we need to load the tidyverse package. Beware that this may take a while. The second line provides the code to install tidyverse if you don't have it already. 
+
+```{r}
+library(tidyverse) # import package
+# install.packages('tidyverse')
+```
+
+### Importing data
+
+Data comes in a variety of forms such as pdfs, text files, csvs, etc. Most of the time you'll be importing tabular data into R, which most typically comes in the form of .txt, .csv, .tsv, among other file formats. This notebook uses data from a csv which can be loaded into your R environment like so.
+
+```{r}
+df <- read.csv('data/NLSY.csv') 
+```
+
+You should be able to see the dataframe now in the top right of your environment under **Data**. The main argument to the `read.csv` function is the relative file path + file name. If you run into an error along those lines, you can use `getwd()` and `setwd()` to figure out where you are and where your data is relative to your R/Rmd file. 
+
+### Exploring your data
+
+Now that we've loaded our data into R, we can take a look at it. We can see from the top right that our data has 2584 observations with 5 variables. However, we can also find that information out using functions built into R, namely `nrow` and `ncol` which return the number of rows and columns in our dataframe, respectively. We can also get both at the same time using `dim` (short for dimension) which will return the number of rows and then the number of columns as a vector. 
+
+```{r}
+print(nrow(df))
+print(ncol(df))
+print(dim(df))
+```
+
+Let's now take a look at the data itself. We can take a look at the entire dataframe using `View` or by clicking on the variable name in the top right, but with larger datasets that may not be possible. As a result, we can use functions such as `head` or `tail` to look at the first or last few observations. You can also combine `View` with these and the functions we'll learn later on to look at snippets of the dataframe more easily. 
+
+```{r}
+head(df)
+```
+
+### The Big 4
+
+The following section will cover what some call the Big 4 functions of tidyverse for working with data. These are by no means the only four functions you'll need to know to work with data with tidy, but are likely to be some of the ones you'll use most frequently.
+
+
+#### Select
+
+The `select` function allows you to select columns of the dataframe in a variety of ways. Most common are passing the names of the columns as arguments or using vectors and boolean expressions. These ways of selecting columns are all a part of `<tidyselect>` which we won't go into detail about here but is an extremely powerful and flexible way of selecting columns that can be found in many tidyverse functions. The example below selects all but the Subject and Gender columns.
+
+```{r}
+head(select(df,!c(Subject, Gender)))
+```
+
+#### Filter
+
+The next function is `filter` which allows us to subset the rows of the dataframe based on conditions we can write out. For example, we can choose to only return the rows where people have at least 14 years of education.
+
+```{r}
+head(filter(df, Edu2006 >= 14))
+```
+
+We can also subset on multiple columns and conditions using more complex boolean expressions. 
+
+#### Mutate
+
+The `mutate` function allows us to modify the values of columns and create new ones. 
+
+
+```{r}
+head(mutate(df,dbl_income = 2 * Income2005))
+```
+
+#### Arrange
+
+The last of the big four is `arrange`. This function allows us to sort the dataframe by a single or multiple columns in ascending or descending order. For example, if we want to find the subject with the highest income
+
+```{r}
+head(arrange(df, desc(Income2005)))
+```
+
+### Pipes in R
+
+Typically you'll be using a number of these and potentially other functions together. However, this can get messy pretty quickly when nesting many functions together. To improve code readability, it is recommended to use pipes in R (`%>%`) to chain together a number of functions. Pipes pass the variable on the left as the first argument into the function on the right. As you may have noticed, the first argument of the above functions is a dataframe and return a dataframe. This makes chaining functions with pipes extremely convenient. 
+
+For example, if we wanted to find the top 3 individuals by income who are female and have a combined AFQT and Edu2006 of less than 100 (this is a made up variable for this example, doesn't have any actual meaning), the "normal" code would look like this:
+
+```{r}
+head(
+  arrange(
+    filter(
+      mutate(df, metric = AFQT + Edu2006), 
+      (metric < 100) & (Gender == 'male')),
+    desc(Income2005)),
+  3)
+```
+
+With pipes it looks like this
+
+```{r}
+df %>% 
+  mutate(metric = AFQT + Edu2006) %>%
+  filter((metric < 100) & (Gender == 'male')) %>%
+  arrange(desc(Income2005)) %>%
+  head(3)
+```
+
+The latter is much easier to read and understand what each step is doing which is also helpful for debugging. 
+
+## Transforming Data
+
+### Group By and Summarise
+
+Oftentimes we'll want to learn about the data by making tables with summary statistics. For a number of tasks, this is most easily accomplished using `group_by` and `summarise`. For example, if we want to know the average income of this group by gender
+
+```{r}
+df %>% 
+  group_by(Gender) %>%
+  summarise(avg_inc = mean(Income2005))
+```
+
+We can combine this with the functions learned above to get more interesting and detailed information. For example, if I want to know the average income broken out by gender and education level
+
+```{r warning=F, message=F}
+df %>%
+  mutate(edu_cat = if_else(Edu2006 <= 12, 'HS', 'More than HS')
+         ) %>%
+  group_by(Gender, edu_cat) %>%
+  summarise(avg_inc = mean(Income2005)) %>%
+  arrange(edu_cat)
+```
+
+The code above uses the function `if_else` which, if the expression in the first argument evaluates to TRUE, returns the value in the second argument, else returns the value in the third argument. If we want to make more categories, we can instead use `case_when` like in the example below.
+
+```{r warning=F, message=F}
+summarised_df <- df %>%
+  mutate(edu_cat = case_when(
+    Edu2006 <= 12 ~ 'HS',
+    Edu2006 > 12 & Edu2006 < 16 ~ 'Some College',
+    Edu2006 == 16 ~ 'College',
+    Edu2006 > 16 ~ 'More than College'
+  )
+  ) %>%
+  group_by(Gender, edu_cat) %>%
+  summarise(avg_inc = mean(Income2005)) %>%
+  arrange(edu_cat)
+summarised_df
+```
+
+### Pivoting Tables
+
+Tabular data often comes in long form which we have seen above. Long data is data in which each column is a variable and each row is a unique observation. This format is convenient for performing further analyses and for plotting. However, data may also come in (or you may want to transform data into) wide format. Wide formats often work well to summarise data. An example is the table we provided above. It is currently in long format, but is much easier to read in wide format. We can turn tables to long or wide formats using `pivot_longer` and `pivot_wider` respectively. 
+
+```{r}
+wide_df <- summarised_df %>%
+  pivot_wider(id_cols = edu_cat,
+              names_from = Gender,
+              values_from = avg_inc)
+wide_df
+```
+
+From the function documentation (which can be accessed using `?pivot_wider`), we can see that the id_cols argument provides the column or columns which uniquely identify each observation. This means that the column(s) in id_cols describe what each row represents, here education level. names_from selects the column(s) that choose what each column will represent, here gender. Lastly, value_from selects the column from which you'll get the numbers for the table. 
+
+We can also do the reverse and turn this table back to long format.
+
+```{r}
+wide_df %>%
+  pivot_longer(cols = !edu_cat,
+               names_to = 'gender',
+               values_to = 'avg_inc')
+```
+
+The argument cols selects which columns you want to pivot which in our case is all columns except edu_cat. names_to and values_to are essentially the opposite of names_from and values from. 

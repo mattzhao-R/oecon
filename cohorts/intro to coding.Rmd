@@ -1,10 +1,140 @@
 ---
-title: "intro to coding"
+title: "Crash Course: Coding in R"
 author: "Oeconomica"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+This tutorial provides a brief crash course on coding in R. Topics covered are chosen selectively based on what may be helpful for data analysis and are meant to help students get started with R for data analysis. For additional references see [Introduction to Programming with R](https://discdown.org/rprogramming/vectors.html).
+
+## Coding Basics
+
+### Variables
+
+Variables store information. In R, we declare variables (store information in them) using the operators `<-` or `=`. We can store a variety of information in variables and name the variables however we like. Good coding practice is to name your variable what it is meant to store, and variable naming typically follows conventions such as snake_case or CamelCase. This notebook uses snake_case. An example is shown below.
+
+```{r}
+my_sentence <- 'Hello World'
+my_sentence
+```
+
+### Types + Printing
+
+Variables can contain different kinds of information. These different kinds of information are referred to as **types**. Some examples of types include numeric (numbers) and character (strings).
+
+```{r}
+my_number <- 123095
+my_string <- 'dog'
+print(my_number)
+print(my_string)
+```
+
+In the above code chunk, we used print to display both of the variables as output. Printing is *very* useful when coding, particularly for debugging. When your code runs into errors or is not working as intended, a good strategy is to print outputs at different points in your code to see where it is not working as intended. This, combined with solid Google/ChatGPT/Bard use, should allow you to debug >95% of your code for our use cases. 
+
+One of the ways you can print multiple outputs in one line is by using `paste` and its variants. To learn more about `paste` or any function in R, you can use the `?` operator + the function name (don't add parentheses after) to pull up its help guide in the bottom right of RStudio.
+
+```{r}
+print(paste(my_number,my_string))
+print(paste0(my_number,my_string)) # paste but sep defaults to empty string ''
+?paste
+```
+
+### Logic + Conditionals
+
+A key coding concept that is also important for data work is logic, in particular boolean expressions and conditional statements. Boolean is a type, like the types we mentioned before e.g. numeric, char, and is either true or false. We can also store these values in a variable like below:
+
+```{r}
+my_bool <- TRUE
+my_bool_abbv <- T # bools in R can be abbreviated e.g. FALSE -> F
+print(my_bool)
+print(my_bool_abbv)
+```
+
+Logic/boolean expressions provide us with ways to check information stored in variables. In data work, this is most widely used when filtering/subsetting our data (more on that in the intro to working with data notebook). An example of a conditional statement is shown below:
+
+```{r}
+x <- 5
+if (x > 2) {
+  print('Lorem')
+} else if (x < 1) {
+  print('Ipsum')
+} else {
+  print('Fin')
+}
+```
+
+Boolean expressions such as the ones above (`x > 2`, `x < 1`) *evaluate* to a boolean value (T/F). These logic statements can be used in a number of ways and chained together using various logic operators, namely the relational operators `>`, `<`,`==`, the negation `!` (negation of `==` is `!=`), and and/or (`&`,`|`). 
+
+### Iterables
+
+There are a number of data structures in R. The most important iterables are vectors and lists. An iterable is a data structure that can return its elements one by one in a set order, where the elements of an iterable are the variables/values stored in it. Below is an example of a vector and combining two vectors.
+
+```{r}
+my_vec <- c('hello')
+my_vec2 <- c(1,6,3)
+combined_vec <- c(my_vec,my_vec2)
+print(combined_vec)
+```
+
+We can **index** into this vector using brackets. Keep in mind that R is 1-indexed (unlike many other languages that are 0-indexed like Python).
+
+```{r}
+my_vec2[2]
+```
+
+One useful trick is called *masking* which is when we use the vector itself in a boolean expression to index the vector. Below we want to only return the values of the vector which are greater than 2.
+
+```{r}
+mask <- my_vec2 > 2
+print(mask)
+print(my_vec2[mask])
+```
+
+We can **loop** through an iterable using a for loop like so
+
+```{r}
+for (element in my_vec2) {
+  print(element)
+}
+```
+
+We can also modify the elements of a vector using a loop. The example below adds 3 to each element of the vector. 
+
+```{r}
+my_vec3 <- 1:10 # makes a vector of the numbers 1 through 10
+for (index in 1:10) {
+  my_vec3[index] <- my_vec3[index] + 3
+}
+print(my_vec3)
+```
+
+### Functions
+
+Functions, like print, take in variables and return an output based on a series of self-contained code. Functions are extremely useful in reducing the amount of code you have to write if you plan on performing the same task a number of times. Here's an example of a function in R.
+
+```{r}
+my_func <- function(some_input) {
+  my_var <- some_input + 10
+  my_var # R functions return the last variable in the function body
+}
+
+my_input <- 12
+print(my_func(my_input))
+```
+
+### Vectorization
+
+As you saw in the earlier example, we can loop through a vector to modify its elements one by one. However, when vectors become large, this becomes inefficient. As a result, it is oftentimes better practice to take advantage of vectorized operations which are operators that can be applied to a vector all at once. Basic math operators and a handful of other functions are vectorized and it is good practice to vectorize operations when you can.
+
+```{r}
+my_vec4 <- 1:10000000
+print(length(my_vec4))
+
+print((my_vec4 / 3)[1:10])
 ```
 
